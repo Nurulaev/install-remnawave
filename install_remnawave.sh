@@ -124,11 +124,12 @@ progress() {
     local filled=$(( cur * width / total ))
     local i
     local bar=""
+    local BLOCK_FULL="█"; local BLOCK_EMPTY="░"
     for (( i=0; i<width; i++ )); do
         if [ "$i" -lt "$filled" ]; then
-            bar="${bar}${BG_GREEN} ${C_RESET}"
+            bar="${bar}${G}${BLOCK_FULL}${C_RESET}"
         else
-            bar="${bar}${D}·${C_RESET}"
+            bar="${bar}${D}${BLOCK_EMPTY}${C_RESET}"
         fi
     done
     local right=$(( 100 - pct ))
@@ -198,7 +199,6 @@ boot_screen() {
 show_main_menu() {
     clear
     banner
-    boxline "МЕНЮ УСТАНОВКИ" 0 >/dev/null 2>&1
     echo -e "${D}   Remnawave Panel Installer · btop edition · v${SCRIPT_VERSION}${C_RESET}"
     echo -e "${D}   Логика: eGamesAPI/remnawave-reverse-proxy${C_RESET}"
     echo ""
@@ -484,6 +484,18 @@ write_sub_page() {
     [ "$INSTALL_SUB_PAGE" = "false" ] && { info "Подписочная страница пропущена"; return; }
     info "Подготовка подписочной страницы..."
     mkdir -p "$DIR/subscription"
+
+    # собственный .env подписочной страницы (не путать с .env панели)
+    cat > "$DIR/subscription/.env" <<EOF
+APP_PORT=3010
+REMNAWAVE_PANEL_URL=http://remnawave:3000
+REMNAWAVE_API_TOKEN=PASTE_YOUR_API_TOKEN_HERE
+CUSTOM_SUB_PREFIX=
+MARZBAN_LEGACY_LINK_ENABLED=false
+TRUST_PROXY=1
+EOF
+    warn "После первого запуска панели создайте API-токен (Settings → API Tokens) и вставьте его в $DIR/subscription/.env → REMNAWAVE_API_TOKEN, затем перезапустите подписочную страницу"
+
     cat > "$DIR/subscription/docker-compose.yml" <<'EOF'
 services:
   remnawave-subscription-page:
