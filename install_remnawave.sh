@@ -197,31 +197,58 @@ boot_screen() {
 
 # ── меню в стиле btop: выбрать установку ──
 show_main_menu() {
-    clear
-    banner
-    echo -e "${D}   Remnawave Panel Installer · btop edition · v${SCRIPT_VERSION}${C_RESET}"
-    echo -e "${D}   Логика: eGamesAPI/remnawave-reverse-proxy${C_RESET}"
-    echo ""
-    box_line "${W}ВЫБЕРИТЕ ДЕЙСТВИЕ${C_RESET}" 60
-    echo ""
-    echo -e "  ${G}1${C_RESET}. Установить Remnawave (панель + нода + подписка)"
-    echo -e "  ${G}2${C_RESET}. Переустановить панель/ноду"
-    echo -e "  ${G}3${C_RESET}. Управление панелью/нодой"
-    echo ""
-    echo -e "  ${G}4${C_RESET}. Установить случайный шаблон"
-    echo -e "  ${G}5${C_RESET}. Пользовательские шаблоны (legiz)"
-    echo -e "  ${G}6${C_RESET}. WARP Native"
-    echo -e "  ${G}7${C_RESET}. Резервное копирование / восстановление"
-    echo ""
-    echo -e "  ${G}8${C_RESET}. Управление IPv6"
-    echo -e "  ${G}9${C_RESET}. Управление сертификатами домена"
-    echo ""
-    echo -e "  ${G}10${C_RESET}. Проверить обновления"
-    echo -e "  ${G}11${C_RESET}. Удалить скрипт"
-    echo -e "  ${G}0${C_RESET}. Выход"
-    echo ""
-    echo -e "  ${D}Быстрый старт: ${G}remnawave_reverse${C_RESET}${D} или установить: ${G}install${C_RESET}${D}${C_RESET}"
-    echo ""
+    while true; do
+        clear
+        banner
+        echo -e "${D}   Remnawave Panel Installer · btop edition · v${SCRIPT_VERSION}${C_RESET}"
+        echo -e "${D}   Логика: eGamesAPI/remnawave-reverse-proxy${C_RESET}"
+        echo ""
+        box_line "${W}ВЫБЕРИТЕ ДЕЙСТВИЕ${C_RESET}" 60
+        echo ""
+        echo -e "  ${G}1${C_RESET}. Установить Remnawave (панель + нода + подписка)"
+        echo -e "  ${G}2${C_RESET}. Переустановить панель/ноду"
+        echo -e "  ${G}3${C_RESET}. Управление панелью/нодой"
+        echo ""
+        echo -e "  ${G}4${C_RESET}. Установить случайный шаблон"
+        echo -e "  ${G}5${C_RESET}. Пользовательские шаблоны (legiz)"
+        echo -e "  ${G}6${C_RESET}. WARP Native"
+        echo -e "  ${G}7${C_RESET}. Резервное копирование / восстановление"
+        echo ""
+        echo -e "  ${G}8${C_RESET}. Управление IPv6"
+        echo -e "  ${G}9${C_RESET}. Управление сертификатами домена"
+        echo ""
+        echo -e "  ${G}10${C_RESET}. Проверить обновления"
+        echo -e "  ${G}11${C_RESET}. Удалить скрипт"
+        echo -e "  ${G}0${C_RESET}. Выход"
+        echo ""
+        echo -e "  ${D}Быстрый старт: ${G}remnawave_reverse${C_RESET}${D} или установить: ${G}install${C_RESET}${D}${C_RESET}"
+        echo ""
+        rain "Ваш выбор:" choice
+
+        case "$choice" in
+            1)
+                main_install
+                echo ""
+                rain "Нажмите Enter чтобы вернуться в меню" _
+                ;;
+            0|"q"|"exit")
+                echo -e "  ${Y}[!]${C_RESET} Выход"
+                exit 0
+                ;;
+            2|3|4|5|6|7|8|9|10|11)
+                echo ""
+                warn "Пункт $choice пока не реализован в btop-версии (только установка)."
+                echo "      В полном оригинале: https://github.com/eGamesAPI/remnawave-reverse-proxy"
+                echo ""
+                rain "Нажмите Enter чтобы вернуться в меню" _
+                ;;
+            *)
+                echo ""
+                warn "Неверный выбор: '$choice'"
+                sleep 1
+                ;;
+        esac
+    done
 }
 
 # ── чтение ввода с подсказкой ──
@@ -602,11 +629,7 @@ case "${1:-}" in
         echo "remnawave-installer v$SCRIPT_VERSION"
         ;;
     *)
-        # автоопределение в ~/.bashrc или интерактивное меню
-        if [ -t 0 ]; then
-            main_install
-        else
-            show_main_menu
-        fi
+        # запуск без аргументов / интерактивный режим → меню
+        show_main_menu
         ;;
 esac
