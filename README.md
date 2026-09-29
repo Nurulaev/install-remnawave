@@ -21,11 +21,11 @@
 
 # 🌈 Установка одной командой
 
-### `bash <(curl -s https://raw.githubusercontent.com/Nurulaev/install-remnawave/main/install_remnawave.sh)`
+### `bash <(curl -Ls https://raw.githubusercontent.com/Nurulaev/install-remnawave/main/install_remnawave.sh)`
 
 **✨ Самый красивый способ установить Remnawave ✨**
 
-[![Version](https://img.shields.io/badge/-version-2.0.0-brightgreen?style=for-the-badge&logo=terminal)](https://github.com/Nurulaev/install-remnawave)
+[![Version](https://img.shields.io/badge/-version-2.1.0-brightgreen?style=for-the-badge&logo=terminal)](https://github.com/Nurulaev/install-remnawave)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Debian%20%7C%20Ubuntu-orange?style=for-the-badge&logo=linux)]()
 [![Remnawave](https://img.shields.io/badge/Remnawave-v3-purple?style=for-the-badge)](https://github.com/remnawave)
@@ -50,7 +50,7 @@
     ║╣ ║║║╠╦╝║╠═╣╠╩╗║║   ║  ║ ║║ ║╠═╣║║║╚═╗║╣
     ╚═╝╩ ╩╩╚═╩╩ ╩╚═╝╩╚═╝ ╩═╝╚═╝╚═╝╩ ╩╝╚╝╚═╝╚═╝
 
-      Remnawave Panel Installer · btop edition · v2.0.0
+      Remnawave Panel Installer · btop edition · v2.1.0
 
     ╭──────────────────── SYSTEM CHECK ─────────────────────╮
     │                                                        │
@@ -84,48 +84,26 @@
 
 ---
 
-## 🐛 Исправлено 10 критических багов
+## 🐛 Что исправлено в v2.1.0
 
-<table>
-<tr>
-<td width="50%">
+| # | Было (v2.0.0) | Стало |
+|---|---|---|
+| 1 | `DATABASE_URL` содержал литерал `***` → бэкенд не мог подключиться к БД | Реальный пароль, совпадает с `POSTGRES_PASSWORD` |
+| 2 | «Авто-создание админа» вызывало несуществующую CLI-команду и печатало нерабочий пароль | Убрано. Первый зарегистрированный пользователь = супер-админ (как в Remnawave). Сброс: `docker exec -it remnawave cli` |
+| 3 | `SUB_PUBLIC_DOMAIN` пустой без sub-page → ломались ссылки подписок | `panel.domain/api/sub` по умолчанию |
+| 4 | Все ошибки `docker compose` / `apt` глотались спиннером | Каждый шаг проверяет exit-code, лог в `/var/log/remnawave-installer.log` |
+| 5 | Caddy стартовал до создания сети → гонка | Проверка `docker network inspect` перед Caddy |
+| 6 | `ss` не устанавливался → проверка портов молча проходила | `iproute2` в зависимостях |
+| 7 | Меню обещало 11 опций, реализовано 5 | Реализованы все 11: update, restart, logs, certs, sub-page token, self-update |
+| 8 | Настройки не сохранялись между запусками | `/opt/remnawave/.installer.conf` |
+| 9 | `curl \| bash` не мог читать ввод | stdin переподключается к `/dev/tty` |
+| 10 | Без валидации доменов/email | Проверка формата, DNS vs публичный IP сервера |
+| 11 | Caddy без email для ACME, без HTTP/3 | `email` в глобальном блоке, `443/udp` |
+| 12 | Повторный запуск затирал `.env` (новые пароли → БД недоступна) | Секреты сохраняются, обновляются только домены |
+| 13 | Node: `SECRET_KEY` в открытом виде в compose | Вынесен в `.env` (chmod 600) |
+| 14 | Uninstall удалял бэкапы вместе с `/opt/remnawave` | Бэкапы копируются в `/root/remnawave-backups-*` |
 
-### ❌ Было (старая версия)
-
-```yaml
-postgres:16                    # ← устаревший
-valkey:7-alpine                # ← устаревший
-# нет shm_size                # ← memory leak
-# нет maxmemory-policy        # ← OOM killer
-nc -z localhost 0              # ← ненадёжный healthcheck
-:443 { tls internal }          # ← ломал SSL! 🔥
-# нет DATABASE_URL             # ← панель падает
-# нет WEBHOOK_SECRET          # ← security hole
-# нет TRUST_PROXY             # ← sub page пустая
-Caddy на host network          # ← 502 Bad Gateway
-```
-
-</td>
-<td width="50%">
-
-### ✅ Стало (v2.0.0)
-
-```yaml
-postgres:18.4                  # ← актуальная
-valkey/valkey:9-alpine          # ← актуальная
-shm_size: 512mb                 # ← fix memory leak
---maxmemory-policy noeviction   # ← fix OOM
-valkey-cli ... ping             # ← надёжный healthcheck
-LET'S ENCRYPT автоматом         # ← правильный SSL ✅
-DATABASE_URL в .env             # ← всё работает
-WEBHOOK_SECRET_HEADER           # ← security ✅
-TRUST_PROXY=1                   # ← sub page работает
-Caddy в bridge network          # ← 502 исправлен
-```
-
-</td>
-</tr>
-</table>
+Compose-файлы панели, Caddy, sub-page и ноды соответствуют актуальным `docker-compose-prod.yml` из upstream-репозиториев Remnawave.
 
 ---
 
@@ -187,12 +165,18 @@ sudo bash install_remnawave.sh
 ### CLI команды
 
 ```bash
-sudo bash install_remnawave.sh install    # 🚀 быстрая установка
-sudo bash install_remnawave.sh node       # 🌍 установка ноды
-sudo bash install_remnawave.sh status     # 📊 статус
-sudo bash install_remnawave.sh backup     # 💾 бэкап
-sudo bash install_remnawave.sh uninstall  # 💀 удаление
-sudo bash install_remnawave.sh --help     # 📖 помощь
+sudo bash install_remnawave.sh install      # 🚀 установка панели
+sudo bash install_remnawave.sh node         # 🌍 установка ноды
+sudo bash install_remnawave.sh status       # 📊 статус
+sudo bash install_remnawave.sh update       # 🔄 обновить образы
+sudo bash install_remnawave.sh restart      # 🔁 перезапуск
+sudo bash install_remnawave.sh logs         # 📋 логи
+sudo bash install_remnawave.sh backup       # 💾 бэкап
+sudo bash install_remnawave.sh certs        # 🔒 сертификаты
+sudo bash install_remnawave.sh subpage      # 📝 API-токен sub-page
+sudo bash install_remnawave.sh self-update  # ⬆️  обновить скрипт
+sudo bash install_remnawave.sh uninstall    # 💀 удаление
+sudo bash install_remnawave.sh --help       # 📖 помощь
 ```
 
 ---
@@ -204,7 +188,7 @@ sudo bash install_remnawave.sh --help     # 📖 помощь
 | 🔧 Backend | `remnawave` | `remnawave/backend:3` | 3000, 3001 |
 | 🗄️ Database | `remnawave-db` | `postgres:18.4` | internal |
 | ⚡ Cache | `remnawave-redis` | `valkey/valkey:9-alpine` | socket |
-| 🌐 Proxy | `caddy` | `caddy:2.9` | 80, 443 |
+| 🌐 Proxy | `caddy` | `caddy:2` | 80, 443, 443/udp |
 | 📄 Sub Page | `remnawave-subscription-page` | `remnawave/subscription-page:latest` | 3010 |
 | 🌍 Node | `remnanode` | `remnawave/node:latest` | 2222 |
 
@@ -214,11 +198,12 @@ sudo bash install_remnawave.sh --help     # 📖 помощь
 
 ```
 /opt/remnawave/
-├── 📄 .env                        # секреты
+├── 📄 .env                        # секреты (chmod 600)
+├── 📄 .installer.conf             # домены/настройки установщика
 ├── 📄 docker-compose.yml          # панель + postgres + valkey
 ├── 📂 caddy/
 │   ├── 📄 Caddyfile               # reverse proxy
-│   └── 📄 docker-compose.yml      # Caddy 2.9
+│   └── 📄 docker-compose.yml      # Caddy 2
 ├── 📂 subscription/
 │   ├── 📄 .env                    # TRUST_PROXY=1
 │   └── 📄 docker-compose.yml
@@ -236,7 +221,7 @@ sudo bash install_remnawave.sh --help     # 📖 помощь
 | 👤 Пользователь | root | root |
 | 💾 RAM | 1 GB | 2+ GB |
 | 💿 Диск | 10 GB | 20+ GB |
-| 🌐 Сеть |公网 IP + домены | 2 домена (panel + sub) |
+| 🌐 Сеть | Публичный IP + домены | 2 домена (panel + sub) |
 | 🐳 Docker | автоустановка | последняя версия |
 
 ---
@@ -246,6 +231,10 @@ sudo bash install_remnawave.sh --help     # 📖 помощь
 > **DNS:** создайте A-записи для панели и подписочной страницы **до** запуска установщика.
 
 > **SSL:** Let's Encrypt выдаётся автоматически Caddy (нужен email).
+
+> **Первый вход:** откройте `https://panel.domain` — первый зарегистрированный пользователь становится супер-админом. Забыли пароль: `docker exec -it remnawave cli` → Reset superadmin.
+
+> **Sub-page:** после первого входа создайте токен (Remnawave Settings → API Tokens) и вставьте его через меню «9».
 
 > **Нода:** после установки панели, создайте ноду через меню «2» или вручную:
 > 1. Панель → Nodes → Management → Add Node
